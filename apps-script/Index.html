@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root{--acc:#1f7a99;--acc-2:#e2f3f9;--ink:#1d2a30;--mut:#5c6b72;--bd:#d5e5eb;--warn:#8a5a00;--warn-bg:#fff6e0;--ok:#1d7a3a}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f8fa;color:var(--ink);font:15px/1.5 "Segoe UI",Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+  h1{margin:0 0 4px;font-size:1.35rem;color:var(--acc)}
+  .sub{margin:0 0 18px;color:var(--mut)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap}
+  input{flex:1;min-width:240px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;font-size:15px}
+  button{padding:10px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+  button.sec{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+  button:disabled{opacity:.5;cursor:wait}
+  .msg{margin:14px 0 0;padding:10px 12px;border-radius:8px;display:none}
+  .msg.err{display:block;background:#fde8e8;color:#8a1c1c}
+  .msg.warn{display:block;background:var(--warn-bg);color:var(--warn)}
+  .msg.ok{display:block;background:#e6f5ea;color:var(--ok)}
+  .msg ul{margin:6px 0 0;padding-left:20px}
+  .card{margin-top:18px;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px}
+  .card h2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 4px;font-size:1.05rem}
+  .card .hint{margin:0 0 12px;color:var(--mut);font-size:.9rem}
+  .sitebox{border:1px dashed var(--bd);border-radius:8px;padding:12px 14px;max-height:420px;overflow:auto}
+  .sitebox h3{margin:14px 0 4px;font-size:1rem}
+  .sitebox p{margin:0 0 8px}
+  iframe{width:100%;height:560px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+  textarea{position:absolute;left:-9999px;top:0}
+  .hidden{display:none}
+  .title{font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Generador de SdA para el Site</h1>
+  <p class="sub">Pega el enlace del documento de la situación de aprendizaje (plantilla 26-27).</p>
+
+  <div class="bar">
+    <input id="url" placeholder="https://docs.google.com/document/d/…" autocomplete="off">
+    <button id="go" onclick="generar()">Generar</button>
+  </div>
+  <div id="msg" class="msg"></div>
+
+  <div id="out" class="hidden">
+    <div class="card">
+      <h2><span>1 · Título de la página</span><button class="sec" onclick="copiarTexto(document.getElementById('tit').textContent, this)">Copiar</button></h2>
+      <p class="hint">Duplica la plantilla del Site, ponle este nombre y cámbialo también en el encabezado.</p>
+      <div id="tit" class="title"></div>
+    </div>
+
+    <div class="card">
+      <h2><span>2 · Texto para el Site</span><button onclick="copiarRico(this)">Copiar texto</button></h2>
+      <p class="hint">Pégalo en un <b>cuadro de texto</b> de la página. Es la parte que encuentra el buscador del Site.</p>
+      <div id="site" class="sitebox"></div>
+    </div>
+
+    <div class="card">
+      <h2><span>3 · Ficha completa (incrustar)</span><button onclick="copiarTexto(window._embed, this)">Copiar código</button></h2>
+      <p class="hint">En el Site: <b>Insertar › Incrustar › Insertar código</b>, pega, pulsa Siguiente e Insertar. Luego estira el recuadro hacia abajo hasta que se vea entera.</p>
+      <iframe id="prev" sandbox="allow-popups"></iframe>
+    </div>
+  </div>
+  <textarea id="tmp"></textarea>
+</div>
+
+<script>
+  document.getElementById('url').addEventListener('keydown', function (e) { if (e.key === 'Enter') generar(); });
+
+  function generar() {
+    var url = document.getElementById('url').value.trim();
+    if (!url) return;
+    var btn = document.getElementById('go');
+    btn.disabled = true; btn.textContent = 'Generando…';
+    mensaje('', '');
+    google.script.run
+      .withSuccessHandler(function (r) {
+        btn.disabled = false; btn.textContent = 'Generar';
+        document.getElementById('tit').textContent = r.titulo;
+        document.getElementById('site').innerHTML = r.site;
+        document.getElementById('prev').srcdoc = r.embed;
+        window._embed = r.embed;
+        document.getElementById('out').classList.remove('hidden');
+        if (r.avisos && r.avisos.length) {
+          mensaje('warn', '<b>Revisa antes de publicar:</b><ul>' + r.avisos.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>');
+        } else {
+          mensaje('ok', 'Plantilla completa: no falta ningún apartado obligatorio.');
+        }
+      })
+      .withFailureHandler(function (e) {
+        btn.disabled = false; btn.textContent = 'Generar';
+        mensaje('err', esc(e.message || String(e)));
+      })
+      .generar(url);
+  }
+
+  function copiarRico(btn) {
+    var el = document.getElementById('site');
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    var ok = document.execCommand('copy');
+    sel.removeAllRanges();
+    avisoBoton(btn, ok);
+  }
+
+  function copiarTexto(txt, btn) {
+    var ta = document.getElementById('tmp');
+    ta.value = txt; ta.select();
+    var ok = document.execCommand('copy');
+    avisoBoton(btn, ok);
+  }
+
+  function avisoBoton(btn, ok) {
+    var t = btn.textContent;
+    btn.textContent = ok ? '¡Copiado!' : 'Selecciona y copia a mano';
+    setTimeout(function () { btn.textContent = t; }, 1600);
+  }
+
+  function mensaje(tipo, html) {
+    var m = document.getElementById('msg');
+    m.className = 'msg' + (tipo ? ' ' + tipo : '');
+    m.innerHTML = html;
+  }
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+</script>
+</body>
+</html>

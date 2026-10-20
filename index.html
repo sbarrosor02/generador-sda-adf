@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador SdA · Aula del Futuro</title>
+<meta name="description" content="Convierte una situación de aprendizaje (plantilla AdF 26-27) en texto y código listos para el Google Site del Aula del Futuro.">
+<style>
+  :root{--acc:#1f7a99;--acc-2:#e2f3f9;--ink:#1d2a30;--mut:#5c6b72;--bd:#d5e5eb;--bg:#f4f8fa;--card:#fff;
+        --warn:#8a5a00;--warn-bg:#fff6e0;--ok:#1d7a3a;--ok-bg:#e6f5ea;--err:#8a1c1c;--err-bg:#fde8e8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Segoe UI",Lato,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+  header h1{margin:0 0 4px;font-size:1.45rem;color:var(--acc)}
+  header p{margin:0;color:var(--mut)}
+  .card{margin-top:18px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px}
+  .card h2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px;font-size:1.05rem}
+  .hint{margin:0 0 12px;color:var(--mut);font-size:.92rem}
+  ol.pasos{margin:6px 0 0;padding-left:20px;color:var(--mut);font-size:.92rem}
+  .drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:130px;margin-top:14px;
+        border:2px dashed var(--bd);border-radius:12px;background:#fbfdfe;text-align:center;cursor:pointer;padding:16px;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.over{border-color:var(--acc);background:var(--acc-2)}
+  .drop:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+  .drop strong{color:var(--acc)}
+  .drop input{position:absolute;width:1px;height:1px;opacity:0}
+  details{margin-top:12px}
+  summary{cursor:pointer;color:var(--acc);font-weight:600}
+  textarea.md{width:100%;min-height:160px;margin-top:8px;padding:10px;border:1px solid var(--bd);border-radius:8px;font:13px/1.4 ui-monospace,Consolas,monospace}
+  label.tit{display:block;margin-top:14px;font-weight:600}
+  input.tit{width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;font-size:15px}
+  button{padding:9px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+  button.sec{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+  button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+  .msg{margin-top:14px;padding:10px 14px;border-radius:8px}
+  .msg.err{background:var(--err-bg);color:var(--err)}
+  .msg.warn{background:var(--warn-bg);color:var(--warn)}
+  .msg.ok{background:var(--ok-bg);color:var(--ok)}
+  .msg ul{margin:6px 0 0;padding-left:20px}
+  .sitebox{border:1px dashed var(--bd);border-radius:8px;padding:12px 16px;max-height:440px;overflow:auto}
+  .sitebox h3{margin:14px 0 4px;font-size:1rem}
+  .sitebox p{margin:0 0 8px}
+  iframe{display:block;width:100%;height:600px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+  .alto{font-weight:700;color:var(--ink)}
+  [hidden]{display:none!important}
+  footer{margin-top:28px;color:var(--mut);font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Generador de SdA para el Site</h1>
+    <p>Aula del Futuro · IES Valle del Jerte (Cabezuela–Navaconcejo) · plantilla SdA 26-27</p>
+  </header>
+
+  <section class="card" aria-labelledby="t-entrada">
+    <h2 id="t-entrada">Carga la situación de aprendizaje</h2>
+    <ol class="pasos">
+      <li>Abre el documento de la SdA en Google Docs.</li>
+      <li><b>Archivo › Descargar › Markdown (.md)</b>.</li>
+      <li>Arrastra aquí el archivo descargado.</li>
+    </ol>
+
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".md,.markdown,.txt,text/markdown,text/plain">
+      <span><strong>Arrastra el archivo .md</strong> o haz clic para elegirlo</span>
+      <span class="hint" id="fname" style="margin:0">Se procesa en tu navegador: el documento no se sube a ningún sitio.</span>
+    </label>
+
+    <details>
+      <summary>…o pega el Markdown</summary>
+      <p class="hint" style="margin-top:6px">En Google Docs puedes usar <b>Editar › Copiar como Markdown</b> (si no aparece, actívalo en Herramientas › Preferencias › Habilitar Markdown).</p>
+      <textarea class="md" id="mdtxt" placeholder="| Datos de identificación | Información |&#10;| :---- | :---- |&#10;…"></textarea>
+      <button id="btnPegar" type="button">Generar</button>
+    </details>
+
+    <label class="tit" for="titulo">Título de la SdA</label>
+    <input class="tit" id="titulo" placeholder="Se rellena con el nombre del archivo; puedes cambiarlo">
+
+    <div id="msg" class="msg" role="status" hidden></div>
+  </section>
+
+  <div id="out" hidden>
+    <section class="card" aria-labelledby="t-1">
+      <h2 id="t-1"><span>1 · Título de la página</span><button class="sec" type="button" data-copiar="titulo">Copiar</button></h2>
+      <p class="hint">Duplica la plantilla del Site, ponle este nombre y cámbialo también en el encabezado.</p>
+      <div id="titOut" style="font-weight:700"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-2">
+      <h2 id="t-2"><span>2 · Texto para el Site</span><button type="button" data-copiar="site">Copiar texto</button></h2>
+      <p class="hint">Pégalo en un <b>cuadro de texto</b> de la página. Es la parte que encuentra el buscador del Site.</p>
+      <div id="site" class="sitebox"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-3">
+      <h2 id="t-3"><span>3 · Ficha completa (incrustar)</span><button type="button" data-copiar="embed">Copiar código</button></h2>
+      <p class="hint">En el Site: <b>Insertar › Incrustar › Insertar código</b>, pega, pulsa Siguiente e Insertar.
+        Después estira el recuadro hasta unos <span class="alto" id="alto">—</span> de alto para que se vea entera.</p>
+      <iframe id="prev" title="Vista previa de la ficha incrustada"></iframe>
+    </section>
+  </div>
+
+  <footer>Código abierto · también disponible como web app de Google Apps Script (carpeta <code>apps-script</code> del repositorio).</footer>
+</div>
+
+<script src="conversor.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var estado = { titulo: '', site: '', embed: '' };
+
+  function limpiarTitulo(nombre) {
+    return String(nombre || '')
+      .replace(/\.(md|markdown|txt)$/i, '')
+      .replace(/_/g, ' ')
+      .replace(/^\s*(DUPLICADO|Copia de|Copy of)\s+/i, '')
+      .replace(/\s*[-–—]\s*Plantilla\s*SdA.*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  function mensaje(tipo, html) {
+    var m = $('msg');
+    if (!tipo) { m.hidden = true; return; }
+    m.className = 'msg ' + tipo; m.innerHTML = html; m.hidden = false;
+  }
+
+  var ultimoMd = '';
+  function generar(md) {
+    ultimoMd = md || '';
+    if (!md || !md.trim()) { mensaje('err', 'El contenido está vacío.'); return; }
+    var titulo = $('titulo').value.trim() || 'Situación de aprendizaje';
+    var r;
+    try { r = sdaConvertir(md, titulo); }
+    catch (e) { mensaje('err', 'No se pudo convertir: ' + esc(e.message)); return; }
+
+    estado = { titulo: titulo, site: r.site, embed: r.embed };
+    $('titOut').textContent = titulo;
+    $('site').innerHTML = r.site;
+    $('out').hidden = false;
+
+    var fr = $('prev');
+    fr.onload = function () {
+      try {
+        var h = fr.contentDocument.documentElement.scrollHeight;
+        fr.style.height = (h + 4) + 'px';
+        $('alto').textContent = (Math.ceil(h / 50) * 50) + ' px';
+      } catch (e) { /* vista previa sin acceso: se queda con la altura por defecto */ }
+    };
+    fr.srcdoc = r.embed;
+
+    if (r.avisos.length) {
+      mensaje('warn', '<b>Revisa antes de publicar:</b><ul>' +
+        r.avisos.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>');
+    } else {
+      mensaje('ok', 'Plantilla completa: no falta ningún apartado obligatorio.');
+    }
+    $('t-1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function leerArchivo(file) {
+    if (!file) return;
+    $('fname').textContent = file.name;
+    $('titulo').value = limpiarTitulo(file.name);
+    file.text().then(generar, function () { mensaje('err', 'No se pudo leer el archivo.'); });
+  }
+
+  // Entrada: archivo
+  $('file').addEventListener('change', function (e) { leerArchivo(e.target.files[0]); e.target.value = ''; });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function () { drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    leerArchivo(e.dataTransfer.files && e.dataTransfer.files[0]);
+  });
+  // Evita que soltar fuera de la zona abra el archivo en la pestaña
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
+
+  // Entrada: pegar
+  $('btnPegar').addEventListener('click', function () { generar($('mdtxt').value); });
+
+  // Cambiar el título regenera
+  $('titulo').addEventListener('change', function () {
+    if (estado.embed) generar(ultimoMd);
+  });
+
+  // Copiar
+  function feedback(btn, ok) {
+    var t = btn.textContent;
+    btn.textContent = ok ? '¡Copiado!' : 'Selecciona y copia a mano';
+    setTimeout(function () { btn.textContent = t; }, 1600);
+  }
+
+  function copiarPlano(txt) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt);
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand('copy'); ta.remove();
+    return ok ? Promise.resolve() : Promise.reject();
+  }
+
+  function copiarRico(html, el) {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write && window.isSecureContext) {
+      return navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([el.innerText], { type: 'text/plain' })
+      })]);
+    }
+    var r = document.createRange(); r.selectNodeContents(el);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    var ok = document.execCommand('copy'); sel.removeAllRanges();
+    return ok ? Promise.resolve() : Promise.reject();
+  }
+
+  document.querySelectorAll('[data-copiar]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var k = btn.getAttribute('data-copiar');
+      var p = k === 'site' ? copiarRico(estado.site, $('site')) : copiarPlano(estado[k]);
+      p.then(function () { feedback(btn, true); }, function () { feedback(btn, false); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
